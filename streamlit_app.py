@@ -2,16 +2,23 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide")
-st.title("🗺️ Celestial Library Floorplan Maker")
+st.title("🗺️ Map Making App")
 
-# Tool buttons (can be expanded later)
-cols = st.columns([1, 1, 1, 5])
-with cols[0]:
-    st.button("➕ Add Line", on_click=lambda: st.session_state.update({"add_line": True}))
-with cols[1]:
-    st.button("📤 Export PNG", on_click=lambda: st.session_state.update({"export_png": True}))
+# Tool selector
+tool = st.sidebar.radio(
+    "Select Tool",
+    ["Line", "Rectangle", "Circle/Ellipse", "Arc", "Polygon"],
+    help="Choose a drawing tool. Shapes are point-editable."
+)
 
-# Embed the canvas HTML
+polygon_sides = None
+if tool == "Polygon":
+    polygon_sides = st.sidebar.slider("Polygon sides", min_value=3, max_value=12, value=5)
+
+snap_to_grid = st.sidebar.toggle("Snap to Grid", value=True)
+show_grid = st.sidebar.toggle("Show Grid", value=True)
+
+# Load the canvas
 with open("frontend/drawing.html", "r") as f:
     html = f.read()
 

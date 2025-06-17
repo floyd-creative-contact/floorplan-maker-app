@@ -2,21 +2,11 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Celestial Library Floorplan Canvas</title>
+  <title>Map Making App</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: transparent;
-    }
-    canvas {
-      border: 1px solid #888;
-      display: block;
-    }
-    #canvas-wrapper {
-      position: relative;
-    }
+    html, body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
+    canvas { border: 1px solid #888; display: block; }
+    #canvas-wrapper { position: relative; }
   </style>
 </head>
 <body>
@@ -31,16 +21,20 @@
       backgroundColor: '#fff'
     });
 
-    // Draw a grid with snap lines
-    function drawGrid(gridSize) {
-      for (let i = 0; i < canvas.width; i += gridSize) {
+    const gridSize = 50;
+    let snapping = true;
+    let showGrid = true;
+
+    function drawGrid(size) {
+      if (!showGrid) return;
+      for (let i = 0; i < canvas.width; i += size) {
         canvas.add(new fabric.Line([i, 0, i, canvas.height], {
           stroke: '#eee',
           selectable: false,
           evented: false
         }));
       }
-      for (let i = 0; i < canvas.height; i += gridSize) {
+      for (let i = 0; i < canvas.height; i += size) {
         canvas.add(new fabric.Line([0, i, canvas.width, i], {
           stroke: '#eee',
           selectable: false,
@@ -49,40 +43,68 @@
       }
     }
 
-    drawGrid(50); // You can make this adjustable later
+    drawGrid(gridSize);
 
-    // Add a line with snapping
-    const gridSize = 50;
-
-    canvas.on('object:moving', function (options) {
-      options.target.set({
-        left: Math.round(options.target.left / gridSize) * gridSize,
-        top: Math.round(options.target.top / gridSize) * gridSize
+    canvas.on('object:moving', function (opt) {
+      if (!snapping) return;
+      opt.target.set({
+        left: Math.round(opt.target.left / gridSize) * gridSize,
+        top: Math.round(opt.target.top / gridSize) * gridSize
       });
     });
 
-    // Example tool (can be expanded)
-    window.addLine = function () {
-      const line = new fabric.Line([100, 100, 200, 100], {
-        stroke: '#000',
-        strokeWidth: 2,
-        selectable: true
-      });
-      canvas.add(line);
+    window.drawShape = function(type, polygonSides = 5) {
+      let shape;
+      switch (type) {
+        case "Line":
+          shape = new fabric.Line([100, 100, 300, 100], {
+            stroke: 'black', strokeWidth: 2, objectCaching: false
+          });
+          break;
+        case "Rectangle":
+          shape = new fabric.Rect({
+            left: 100, top: 100, width: 150, height: 100,
+            fill: 'transparent', stroke: 'black', strokeWidth: 2
+          });
+          break;
+        case "Circle/Ellipse":
+          shape = new fabric.Ellipse({
+            left: 100, top: 100, rx: 75, ry: 50,
+            fill: 'transparent', stroke: 'black', strokeWidth: 2
+          });
+          break;
+        case "Arc":
+          shape = new fabric.Path('M 100 300 A 100 100 0 0 1 300 300', {
+            fill: '', stroke: 'black', strokeWidth: 2
+          });
+          break;
+        case "Polygon":
+          const radius = 60;
+          const points = [];
+          for (let i = 0; i < polygonSides; i++) {
+            const angle = (Math.PI * 2 * i) / polygonSides;
+            points.push({
+              x: radius * Math.cos(angle),
+              y: radius * Math.sin(angle)
+            });
+          }
+          shape = new fabric.Polygon(points, {
+            left: 200, top: 200, fill: 'transparent', stroke: 'black', strokeWidth: 2
+          });
+          break;
+      }
+      canvas.add(shape);
     };
 
-    // Export function (hooked up later)
-    window.getCanvasImage = function () {
-      const png = canvas.toDataURL({
-        format: 'png',
-        multiplier: 2
-      });
-      const data = {
-        type: 'FROM_JS',
-        data: png
-      };
-      window.parent.postMessage(data, '*');
-    };
+    window.toggleSnapping = function(state) {
+      snapping = state;
+    }
+
+    window.toggleGrid = function(state) {
+      showGrid = state;
+      canvas.clear();
+      if (showGrid) drawGrid(gridSize);
+    }
   </script>
 </body>
 </html>
